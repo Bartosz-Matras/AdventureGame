@@ -10,6 +10,7 @@ import pl.matrasbartosz.gamerpg.unit.character.items.exceptions.TooManyItemsExce
 import pl.matrasbartosz.gamerpg.unit.monster.Monster;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -80,7 +81,7 @@ public abstract class Character implements ManageItems {
         if (this.getHealth() > 0) {
             this.setExperience(this.getExperience() + increaseExperience());
             this.checkNextLevel();
-            this.setMoney(this.getMoney().add(monster.getMoney()));
+            this.setMoney(this.getMoney().add(increaseMoney(monster.getMoney())));
 
         }
         this.setYourTurn(false);
@@ -97,7 +98,7 @@ public abstract class Character implements ManageItems {
     }
 
     @Override
-    public void wearItem(Item item) throws TooManyItemsException {
+    public void wearItem(Item item) throws TooManyItemsException, EmptyInventoryException {
         if (item instanceof Armour) {
             Item itemToTakeOf = null;
             for (Item currentItem : this.getFoundedItems()) {
@@ -107,22 +108,31 @@ public abstract class Character implements ManageItems {
             }
             if (itemToTakeOf == null) {
                 this.getFoundedItems().add(item);
+                increaseStats(item);
+                removeItem(item);
             } else {
-                takeOfItem(itemToTakeOf);
+                this.getFoundedItems().remove(itemToTakeOf);
+                addItem(itemToTakeOf);
+                decreaseStats(itemToTakeOf);
                 this.getFoundedItems().add(item);
+                removeItem(item);
+                increaseStats(item);
             }
         }
     }
 
     @Override
     public void takeOfItem(Item item) throws TooManyItemsException {
-        Item itemToChange;
+        Item itemToChange = null;
         for (Item currentItem : this.getFoundedItems()) {
             if (currentItem instanceof Armour) {
                 itemToChange = currentItem;
-                this.getFoundedItems().remove(item);
-                addItem(itemToChange);
             }
+        }
+        if (itemToChange != null) {
+            this.getFoundedItems().remove(item);
+            decreaseStats(item);
+            addItem(itemToChange);
         }
     }
 
@@ -144,16 +154,16 @@ public abstract class Character implements ManageItems {
         }
     }
 
-    int increaseExperience() {
+    double increaseExperience() {
 
         if (this.getFoundedItems().isEmpty()) {
             return this.getLevel() * 10;
         } else {
-            int moreExp = 0;
+            double moreExp = 0;
             for (Item item : this.getFoundedItems()) {
                 moreExp += item.getGainMoreExp();
             }
-            return (this.getLevel() * 10) * (moreExp == 0 ? 1 : moreExp); // something is wrong
+            return (this.getLevel() * 10) * (1.0 + ((moreExp == 0 ? 1 : moreExp)/100));
         }
     }
 
@@ -161,11 +171,35 @@ public abstract class Character implements ManageItems {
         if (this.getFoundedItems().isEmpty()) {
             return new BigDecimal(this.getLevel() * 100);
         } else {
-            int moreMoney = 0;
+            double moreMoney = 0;
             for (Item item : this.getFoundedItems()) {
-                moreMoney += item.getGainMoreExp();
+                moreMoney += item.getGainMoreMoney();
             }
-            return new BigDecimal((this.getLevel() * 100) * (moreMoney == 0 ? 1 : moreMoney)); // something is wrong
+            double value = (this.getLevel() * 100) * (1.0 + ((moreMoney == 0 ? 1 : moreMoney)/100));
+            return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP);
         }
+    }
+
+    BigDecimal increaseMoney(BigDecimal monsterGold) {
+        if (this.getFoundedItems().isEmpty()) {
+            return monsterGold;
+        } else {
+            double moreMoney = 0;
+            for (Item item : this.getFoundedItems()) {
+                moreMoney += item.getGainMoreMoney();
+            }
+            BigDecimal value = monsterGold.multiply(BigDecimal.valueOf(1.0 + ((moreMoney == 0 ? 1 : moreMoney)/100)));
+            return value.setScale(2, RoundingMode.HALF_UP);
+        }
+    }
+
+    void increaseStats(Item item) {
+        this.setHealth(this.getHealth() + item.getGainMoreHealth());
+        this.setDamage(this.getDamage() + item.getGainMoreDamage());
+    }
+
+    void decreaseStats(Item item) {
+        this.setHealth(this.getHealth() - item.getGainMoreHealth());
+        this.setDamage(this.getDamage() - item.getGainMoreDamage());
     }
 }

@@ -1,6 +1,6 @@
 package pl.matrasbartosz.gamerpg.unit.character.items.armour;
 
-import static pl.matrasbartosz.gamerpg.unit.character.items.ItemConstants.*;
+import static pl.matrasbartosz.gamerpg.unit.character.items.armour.ArmourConstants.*;
 
 public class GreatArmour extends Armour {
 

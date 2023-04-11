@@ -1,8 +1,9 @@
 package pl.matrasbartosz.gamerpg.unit.character.items.factory;
 
-import pl.matrasbartosz.gamerpg.unit.character.items.Item;
+import pl.matrasbartosz.gamerpg.unit.character.items.armour.Armour;
 import pl.matrasbartosz.gamerpg.unit.character.items.armour.CommonArmour;
 import pl.matrasbartosz.gamerpg.unit.character.items.armour.GreatArmour;
+import pl.matrasbartosz.gamerpg.unit.character.items.armour.RareArmour;
 
 public class ItemFactory extends Factory{
 
@@ -18,13 +19,16 @@ public class ItemFactory extends Factory{
     }
 
     @Override
-    protected Item createItem(ItemType itemType) {
+    public Armour createArmour(ItemType itemType) {
         switch (itemType) {
             case COMMON_ARMOR -> {
                 return new CommonArmour();
             }
             case GREAT_ARMOR -> {
                 return new GreatArmour();
+            }
+            case RARE_ARMOR -> {
+                return new RareArmour();
             }
             default -> throw new UnsupportedOperationException("Unsupported type");
         }
